@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR 코드 생성기</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            max-width: 800px;
+            width: 100%;
+            animation: fadeInUp 0.6s ease-out;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            color: #333;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 1.1rem;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            align-items: start;
+        }
+
+        .input-section {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        label {
+            font-weight: 600;
+            color: #333;
+            font-size: 1rem;
+        }
+
+        .input-tabs {
+            display: flex;
+            background: #f0f0f0;
+            border-radius: 10px;
+            padding: 4px;
+            margin-bottom: 15px;
+        }
+
+        .tab-button {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            background: transparent;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+        }
+
+        .tab-button.active {
+            background: white;
+            color: #667eea;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        input[type="text"],
+        input[type="url"],
+        input[type="email"],
+        input[type="tel"],
+        textarea {
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            resize: vertical;
+        }
+
+        input[type="text"]:focus,
+        input[type="url"]:focus,
+        input[type="email"]:focus,
+        input[type="tel"]:focus,
+        textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .size-controls {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .size-option {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .size-option input[type="radio"] {
+            margin: 0;
+        }
+
+        .color-controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .color-input {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .color-picker {
+            width: 40px;
+            height: 40px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        .generate-btn {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .generate-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .generate-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .output-section {
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .qr-container {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            min-height: 300px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .placeholder {
+            color: #999;
+            font-size: 1.1rem;
+            text-align: center;
+        }
+
+        .qr-image {
+            max-width: 100%;
+            height: auto;
+            border-radius: 8px;
+        }
+
+        .download-section {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .download-btn {
+            padding: 12px 20px;
+            border: 2px solid #667eea;
+            background: transparent;
+            color: #667eea;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .download-btn:hover {
+            background: #667eea;
+            color: white;
+            transform: translateY(-1px);
+        }
+
+        .error-message {
+            background: #fee;
+            color: #c33;
+            padding: 10px 15px;
+            border-radius: 8px;
+            border: 1px solid #fcc;
+            margin-top: 10px;
+            display: none;
+        }
+
+        .success-message {
+            background: #efe;
+            color: #393;
+            padding: 10px 15px;
+            border-radius: 8px;
+            border: 1px solid #cfc;
+            margin-top: 10px;
+            display: none;
+        }
+
+        .loading {
+            display: none;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            color: #667eea;
+        }
+
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid #e0e0e0;
+            border-top: 2px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+                gap: 30px;
+            }
+
+            .container {
+                padding: 20px;
+            }
+
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .size-controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .color-controls {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔳 QR 코드 생성기</h1>
+            <p>텍스트, URL, 연락처 등을 QR 코드로 변환해보세요</p>
+        </div>
+
+        <div class="main-content">
+            <div class="input-section">
+                <div class="input-group">
+                    <label>콘텐츠 유형</label>
+                    <div class="input-tabs">
+                        <button class="tab-button active" data-tab="text">텍스트</button>
+                        <button class="tab-button" data-tab="url">URL</button>
+                        <button class="tab-button" data-tab="email">이메일</button>
+                        <button class="tab-button" data-tab="phone">전화번호</button>
+                    </div>
+
+                    <div class="tab-content active" id="text-tab">
+                        <textarea id="text-input" rows="4" placeholder="변환할 텍스트를 입력하세요..."></textarea>
+                    </div>
+
+                    <div class="tab-content" id="url-tab">
+                        <input type="url" id="url-input" placeholder="https://example.com">
+                    </div>
+
+                    <div class="tab-content" id="email-tab">
+                        <input type="email" id="email-input" placeholder="example@email.com">
+                        <input type="text" id="email-subject" placeholder="메일 제목 (선택사항)" style="margin-top: 10px;">
+                    </div>
+
+                    <div class="tab-content" id="phone-tab">
+                        <input type="tel" id="phone-input" placeholder="010-1234-5678">
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label>QR 코드 크기</label>
+                    <div class="size-controls">
+                        <div class="size-option">
+                            <input type="radio" id="size-small" name="size" value="150" checked>
+                            <label for="size-small">작음 (150px)</label>
+                        </div>
+                        <div class="size-option">
+                            <input type="radio" id="size-medium" name="size" value="200">
+                            <label for="size-medium">보통 (200px)</label>
+                        </div>
+                        <div class="size-option">
+                            <input type="radio" id="size-large" name="size" value="300">
+                            <label for="size-large">큼 (300px)</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label>색상 설정</label>
+                    <div class="color-controls">
+                        <div class="color-input">
+                            <label for="fg-color">전경색:</label>
+                            <input type="color" id="fg-color" class="color-picker" value="#000000">
+                        </div>
+                        <div class="color-input">
+                            <label for="bg-color">배경색:</label>
+                            <input type="color" id="bg-color" class="color-picker" value="#ffffff">
+                        </div>
+                    </div>
+                </div>
+
+                <button class="generate-btn" onclick="generateQR()">QR 코드 생성</button>
+                
+                <div class="error-message" id="error-message"></div>
+                <div class="success-message" id="success-message"></div>
+            </div>
+
+            <div class="output-section">
+                <div class="qr-container" id="qr-container">
+                    <div class="placeholder">
+                        생성된 QR 코드가 여기에 표시됩니다
+                    </div>
+                    <div class="loading" id="loading">
+                        <div class="spinner"></div>
+                        <span>QR 코드 생성 중...</span>
+                    </div>
+                </div>
+
+                <div class="download-section" id="download-section" style="display: none;">
+                    <a class="download-btn" id="download-png" download="qrcode.png">PNG 다운로드</a>
+                    <button class="download-btn" onclick="copyToClipboard()">이미지 복사</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // QR Code generation using QR Server API
+        let currentQRCode = null;
+
+        // Tab switching
+        document.querySelectorAll('.tab-button').forEach(button => {
+            button.addEventListener('click', () => {
+                // Remove active class from all tabs and contents
+                document.querySelectorAll('.tab-button').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+
+                // Add active class to clicked tab and corresponding content
+                button.classList.add('active');
+                document.getElementById(button.dataset.tab + '-tab').classList.add('active');
+            });
+        });
+
+        function showError(message) {
+            const errorDiv = document.getElementById('error-message');
+            const successDiv = document.getElementById('success-message');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+            successDiv.style.display = 'none';
+        }
+
+        function showSuccess(message) {
+            const errorDiv = document.getElementById('error-message');
+            const successDiv = document.getElementById('success-message');
+            successDiv.textContent = message;
+            successDiv.style.display = 'block';
+            errorDiv.style.display = 'none';
+        }
+
+        function hideMessages() {
+            document.getElementById('error-message').style.display = 'none';
+            document.getElementById('success-message').style.display = 'none';
+        }
+
+        function getInputData() {
+            const activeTab = document.querySelector('.tab-button.active').dataset.tab;
+            
+            switch(activeTab) {
+                case 'text':
+                    return document.getElementById('text-input').value;
+                case 'url':
+                    return document.getElementById('url-input').value;
+                case 'email':
+                    const email = document.getElementById('email-input').value;
+                    const subject = document.getElementById('email-subject').value;
+                    return subject ? `mailto:${email}?subject=${encodeURIComponent(subject)}` : `mailto:${email}`;
+                case 'phone':
+                    return `tel:${document.getElementById('phone-input').value}`;
+                default:
+                    return '';
+            }
+        }
+
+        function getSelectedSize() {
+            return document.querySelector('input[name="size"]:checked').value;
+        }
+
+        function generateQR() {
+            hideMessages();
+            const data = getInputData().trim();
+            
+            if (!data) {
+                showError('내용을 입력해주세요.');
+                return;
+            }
+
+            const size = getSelectedSize();
+            const fgColor = document.getElementById('fg-color').value.replace('#', '');
+            const bgColor = document.getElementById('bg-color').value.replace('#', '');
+
+            // Show loading
+            document.getElementById('loading').style.display = 'flex';
+            document.querySelector('.placeholder').style.display = 'none';
+
+            // Generate QR code using QR Server API
+            const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodeURIComponent(data)}&color=${fgColor}&bgcolor=${bgColor}`;
+
+            const img = new Image();
+            img.onload = function() {
+                document.getElementById('loading').style.display = 'none';
+                
+                // Clear container and add image
+                const container = document.getElementById('qr-container');
+                container.innerHTML = '';
+                container.appendChild(img);
+                
+                currentQRCode = img;
+                
+                // Show download section
+                document.getElementById('download-section').style.display = 'flex';
+                document.getElementById('download-png').href = qrUrl;
+                
+                showSuccess('QR 코드가 성공적으로 생성되었습니다!');
+            };
+
+            img.onerror = function() {
+                document.getElementById('loading').style.display = 'none';
+                document.querySelector('.placeholder').style.display = 'block';
+                showError('QR 코드 생성에 실패했습니다. 다시 시도해주세요.');
+            };
+
+            img.src = qrUrl;
+            img.className = 'qr-image';
+            img.alt = 'Generated QR Code';
+        }
+
+        function copyToClipboard() {
+            if (!currentQRCode) {
+                showError('복사할 QR 코드가 없습니다.');
+                return;
+            }
+
+            // Create canvas to convert image to blob
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = currentQRCode.width;
+            canvas.height = currentQRCode.height;
+            ctx.drawImage(currentQRCode, 0, 0);
+
+            canvas.toBlob(async (blob) => {
+                try {
+                    await navigator.clipboard.write([
+                        new ClipboardItem({ 'image/png': blob })
+                    ]);
+                    showSuccess('QR 코드가 클립보드에 복사되었습니다!');
+                } catch (err) {
+                    showError('클립보드 복사에 실패했습니다.');
+                }
+            }, 'image/png');
+        }
+
+        // Enter key support for inputs
+        document.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter' && e.target.matches('input, textarea')) {
+                generateQR();
+            }
+        });
+
+        // Auto-generate on input change (with debounce)
+        let debounceTimer;
+        function debounceGenerate() {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(() => {
+                const data = getInputData().trim();
+                if (data) {
+                    generateQR();
+                }
+            }, 1000);
+        }
+
+        document.querySelectorAll('input, textarea').forEach(input => {
+            input.addEventListener('input', debounceGenerate);
+        });
+
+        document.querySelectorAll('input[name="size"], .color-picker').forEach(input => {
+            input.addEventListener('change', () => {
+                const data = getInputData().trim();
+                if (data) {
+                    generateQR();
+                }
+            });
+        });
+    </script>
+</body>
+</html>
