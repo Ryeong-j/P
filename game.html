@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>지뢰찾기 게임</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .game-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            animation: fadeInUp 0.6s ease-out;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            color: #333;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .game-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding: 15px 20px;
+            background: #f8f9fa;
+            border-radius: 15px;
+            gap: 20px;
+        }
+
+        .info-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .mines-count {
+            color: #dc3545;
+        }
+
+        .timer {
+            color: #28a745;
+        }
+
+        .reset-btn {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            font-size: 1rem;
+        }
+
+        .reset-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .difficulty-controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .difficulty-btn {
+            background: transparent;
+            border: 2px solid #667eea;
+            color: #667eea;
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .difficulty-btn:hover,
+        .difficulty-btn.active {
+            background: #667eea;
+            color: white;
+        }
+
+        .game-board {
+            display: grid;
+            gap: 2px;
+            background: #ccc;
+            border-radius: 10px;
+            padding: 10px;
+            margin: 0 auto;
+        }
+
+        .cell {
+            width: 30px;
+            height: 30px;
+            background: #e0e0e0;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 14px;
+            transition: all 0.1s ease;
+            user-select: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 3px;
+        }
+
+        .cell:hover {
+            background: #d0d0d0;
+        }
+
+        .cell.revealed {
+            background: #f8f9fa;
+            cursor: default;
+        }
+
+        .cell.mine {
+            background: #dc3545;
+            color: white;
+        }
+
+        .cell.flagged {
+            background: #ffc107;
+            color: #333;
+        }
+
+        .cell.flagged::after {
+            content: '🚩';
+        }
+
+        .cell.mine.revealed::after {
+            content: '💣';
+        }
+
+        .cell.number-1 { color: #0066cc; }
+        .cell.number-2 { color: #009900; }
+        .cell.number-3 { color: #ff0000; }
+        .cell.number-4 { color: #000080; }
+        .cell.number-5 { color: #800000; }
+        .cell.number-6 { color: #008080; }
+        .cell.number-7 { color: #000000; }
+        .cell.number-8 { color: #808080; }
+
+        .game-over {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .game-over-content {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            text-align: center;
+            animation: bounceIn 0.6s ease-out;
+            max-width: 400px;
+        }
+
+        @keyframes bounceIn {
+            0% {
+                opacity: 0;
+                transform: scale(0.3);
+            }
+            50% {
+                opacity: 1;
+                transform: scale(1.05);
+            }
+            70% {
+                transform: scale(0.9);
+            }
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .game-over h2 {
+            font-size: 2rem;
+            margin-bottom: 20px;
+        }
+
+        .win {
+            color: #28a745;
+        }
+
+        .lose {
+            color: #dc3545;
+        }
+
+        .game-over p {
+            font-size: 1.1rem;
+            margin-bottom: 20px;
+            color: #666;
+        }
+
+        .play-again-btn {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .play-again-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .stats {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        .stats h3 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            text-align: center;
+        }
+
+        .stat-item {
+            background: white;
+            padding: 10px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .stat-value {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        @media (max-width: 768px) {
+            .game-container {
+                padding: 20px;
+            }
+
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .game-info {
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .cell {
+                width: 25px;
+                height: 25px;
+                font-size: 12px;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="header">
+            <h1>💣 지뢰찾기</h1>
+        </div>
+
+        <div class="difficulty-controls">
+            <button class="difficulty-btn active" data-level="easy">쉬움 (9x9)</button>
+            <button class="difficulty-btn" data-level="medium">보통 (16x16)</button>
+            <button class="difficulty-btn" data-level="hard">어려움 (16x30)</button>
+        </div>
+
+        <div class="game-info">
+            <div class="info-item mines-count">
+                🚩 <span id="mines-left">10</span>
+            </div>
+            <button class="reset-btn" onclick="initGame()">새 게임</button>
+            <div class="info-item timer">
+                ⏱️ <span id="timer">000</span>
+            </div>
+        </div>
+
+        <div class="game-board" id="game-board"></div>
+
+        <div class="stats">
+            <h3>통계</h3>
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <div class="stat-value" id="games-played">0</div>
+                    <div class="stat-label">플레이한 게임</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="games-won">0</div>
+                    <div class="stat-label">승리</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="win-rate">0%</div>
+                    <div class="stat-label">승률</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="game-over" id="game-over">
+        <div class="game-over-content">
+            <h2 id="game-result">게임 종료</h2>
+            <p id="game-message">메시지</p>
+            <button class="play-again-btn" onclick="playAgain()">다시 하기</button>
+        </div>
+    </div>
+
+    <script>
+        // Game state
+        let board = [];
+        let gameStarted = false;
+        let gameOver = false;
+        let timer = 0;
+        let timerInterval = null;
+        let minesLeft = 0;
+        let revealedCount = 0;
+        let firstClick = true;
+
+        // Difficulty settings
+        const difficulties = {
+            easy: { rows: 9, cols: 9, mines: 10 },
+            medium: { rows: 16, cols: 16, mines: 40 },
+            hard: { rows: 16, cols: 30, mines: 99 }
+        };
+
+        let currentDifficulty = 'easy';
+
+        // Statistics
+        let stats = {
+            gamesPlayed: parseInt(localStorage.getItem('minesweeper-played') || '0'),
+            gamesWon: parseInt(localStorage.getItem('minesweeper-won') || '0')
+        };
+
+        // Initialize game
+        function initGame() {
+            gameStarted = false;
+            gameOver = false;
+            timer = 0;
+            firstClick = true;
+            clearInterval(timerInterval);
+            updateTimer();
+
+            const config = difficulties[currentDifficulty];
+            minesLeft = config.mines;
+            revealedCount = 0;
+            
+            updateMinesCount();
+            createBoard();
+            updateStats();
+        }
+
+        // Create game board
+        function createBoard() {
+            const config = difficulties[currentDifficulty];
+            const gameBoard = document.getElementById('game-board');
+            
+            // Clear existing board
+            gameBoard.innerHTML = '';
+            gameBoard.style.gridTemplateColumns = `repeat(${config.cols}, 1fr)`;
+            
+            // Initialize board array
+            board = [];
+            for (let row = 0; row < config.rows; row++) {
+                board[row] = [];
+                for (let col = 0; col < config.cols; col++) {
+                    board[row][col] = {
+                        isMine: false,
+                        isRevealed: false,
+                        isFlagged: false,
+                        neighborMines: 0
+                    };
+
+                    // Create cell element
+                    const cell = document.createElement('button');
+                    cell.className = 'cell';
+                    cell.dataset.row = row;
+                    cell.dataset.col = col;
+                    cell.addEventListener('click', () => handleCellClick(row, col));
+                    cell.addEventListener('contextmenu', (e) => {
+                        e.preventDefault();
+                        handleRightClick(row, col);
+                    });
+                    
+                    gameBoard.appendChild(cell);
+                }
+            }
+        }
+
+        // Place mines on the board (after first click)
+        function placeMines(excludeRow, excludeCol) {
+            const config = difficulties[currentDifficulty];
+            let minesPlaced = 0;
+
+            while (minesPlaced < config.mines) {
+                const row = Math.floor(Math.random() * config.rows);
+                const col = Math.floor(Math.random() * config.cols);
+
+                // Don't place mine on first clicked cell or if already has mine
+                if ((row === excludeRow && col === excludeCol) || board[row][col].isMine) {
+                    continue;
+                }
+
+                board[row][col].isMine = true;
+                minesPlaced++;
+            }
+
+            // Calculate neighbor mine counts
+            calculateNeighborMines();
+        }
+
+        // Calculate neighbor mine counts
+        function calculateNeighborMines() {
+            const config = difficulties[currentDifficulty];
+            
+            for (let row = 0; row < config.rows; row++) {
+                for (let col = 0; col < config.cols; col++) {
+                    if (!board[row][col].isMine) {
+                        let count = 0;
+                        for (let i = -1; i <= 1; i++) {
+                            for (let j = -1; j <= 1; j++) {
+                                const newRow = row + i;
+                                const newCol = col + j;
+                                if (newRow >= 0 && newRow < config.rows && 
+                                    newCol >= 0 && newCol < config.cols &&
+                                    board[newRow][newCol].isMine) {
+                                    count++;
+                                }
+                            }
+                        }
+                        board[row][col].neighborMines = count;
+                    }
+                }
+            }
+        }
+
+        // Handle cell click
+        function handleCellClick(row, col) {
+            if (gameOver || board[row][col].isRevealed || board[row][col].isFlagged) {
+                return;
+            }
+
+            // First click - place mines and start timer
+            if (firstClick) {
+                firstClick = false;
+                placeMines(row, col);
+                startTimer();
+                gameStarted = true;
+            }
+
+            const cell = board[row][col];
+            
+            if (cell.isMine) {
+                // Game over - hit mine
+                endGame(false);
+                return;
+            }
+
+            // Reveal cell
+            revealCell(row, col);
+
+            // Check for win
+            checkWin();
+        }
+
+        // Handle right click (flag/unflag)
+        function handleRightClick(row, col) {
+            if (gameOver || board[row][col].isRevealed) {
+                return;
+            }
+
+            const cell = board[row][col];
+            const cellElement = document.querySelector(`[data-row="${row}"][data-col="${col}"]`);
+
+            if (cell.isFlagged) {
+                cell.isFlagged = false;
+                cellElement.classList.remove('flagged');
+                minesLeft++;
+            } else {
+                cell.isFlagged = true;
+                cellElement.classList.add('flagged');
+                minesLeft--;
+            }
+
+            updateMinesCount();
+        }
+
+        // Reveal cell and neighbors if empty
+        function revealCell(row, col) {
+            if (board[row][col].isRevealed || board[row][col].isFlagged) {
+                return;
+            }
+
+            const cell = board[row][col];
+            const cellElement = document.querySelector(`[data-row="${row}"][data-col="${col}"]`);
+
+            cell.isRevealed = true;
+            cellElement.classList.add('revealed');
+            revealedCount++;
+
+            if (cell.neighborMines > 0) {
+                cellElement.textContent = cell.neighborMines;
+                cellElement.classList.add(`number-${cell.neighborMines}`);
+            } else {
+                // Auto-reveal neighbors for empty cells
+                const config = difficulties[currentDifficulty];
+                for (let i = -1; i <= 1; i++) {
+                    for (let j = -1; j <= 1; j++) {
+                        const newRow = row + i;
+                        const newCol = col + j;
+                        if (newRow >= 0 && newRow < config.rows && 
+                            newCol >= 0 && newCol < config.cols) {
+                            revealCell(newRow, newCol);
+                        }
+                    }
+                }
+            }
+        }
+
+        // Check for win condition
+        function checkWin() {
+            const config = difficulties[currentDifficulty];
+            const totalCells = config.rows * config.cols;
+            const nonMineCells = totalCells - config.mines;
+
+            if (revealedCount === nonMineCells) {
+                endGame(true);
+            }
+        }
+
+        // End game
+        function endGame(won) {
+            gameOver = true;
+            clearInterval(timerInterval);
+            
+            // Update statistics
+            stats.gamesPlayed++;
+            if (won) {
+                stats.gamesWon++;
+            }
+            localStorage.setItem('minesweeper-played', stats.gamesPlayed.toString());
+            localStorage.setItem('minesweeper-won', stats.gamesWon.toString());
+            updateStats();
+
+            // Reveal all mines
+            const config = difficulties[currentDifficulty];
+            for (let row = 0; row < config.rows; row++) {
+                for (let col = 0; col < config.cols; col++) {
+                    const cell = board[row][col];
+                    const cellElement = document.querySelector(`[data-row="${row}"][data-col="${col}"]`);
+                    
+                    if (cell.isMine) {
+                        cellElement.classList.add('mine', 'revealed');
+                    }
+                }
+            }
+
+            // Show game over modal
+            setTimeout(() => {
+                const gameOverDiv = document.getElementById('game-over');
+                const resultElement = document.getElementById('game-result');
+                const messageElement = document.getElementById('game-message');
+
+                if (won) {
+                    resultElement.textContent = '🎉 승리!';
+                    resultElement.className = 'win';
+                    messageElement.textContent = `축하합니다! ${timer}초만에 클리어하셨습니다!`;
+                } else {
+                    resultElement.textContent = '💥 패배!';
+                    resultElement.className = 'lose';
+                    messageElement.textContent = '지뢰를 밟았습니다. 다시 도전해보세요!';
+                }
+
+                gameOverDiv.style.display = 'flex';
+            }, 1000);
+        }
+
+        // Start timer
+        function startTimer() {
+            timerInterval = setInterval(() => {
+                timer++;
+                updateTimer();
+            }, 1000);
+        }
+
+        // Update timer display
+        function updateTimer() {
+            document.getElementById('timer').textContent = timer.toString().padStart(3, '0');
+        }
+
+        // Update mines count display
+        function updateMinesCount() {
+            document.getElementById('mines-left').textContent = minesLeft;
+        }
+
+        // Update statistics display
+        function updateStats() {
+            document.getElementById('games-played').textContent = stats.gamesPlayed;
+            document.getElementById('games-won').textContent = stats.gamesWon;
+            const winRate = stats.gamesPlayed > 0 ? Math.round((stats.gamesWon / stats.gamesPlayed) * 100) : 0;
+            document.getElementById('win-rate').textContent = winRate + '%';
+        }
+
+        // Play again
+        function playAgain() {
+            document.getElementById('game-over').style.display = 'none';
+            initGame();
+        }
+
+        // Difficulty selection
+        document.querySelectorAll('.difficulty-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.difficulty-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentDifficulty = btn.dataset.level;
+                initGame();
+            });
+        });
+
+        // Initialize game on page load
+        initGame();
+    </script>
+</body>
+</html>
